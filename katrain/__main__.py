@@ -68,8 +68,11 @@ from kivy.resources import resource_add_path, resource_find
 from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
-from kivymd.app import MDApp
+from pysgf import Move, ParseError
 
+# Importing the package registers every widget class with Kivy's Factory, which is
+# how the .kv files resolve them by name.
+import katrain.gui.widgets  # noqa: F401
 from katrain.core.ai import generate_ai_move
 from katrain.core.base_katrain import KaTrainBase
 from katrain.core.constants import (
@@ -95,15 +98,8 @@ from katrain.core.contribute_engine import KataGoContributeEngine
 from katrain.core.game import BaseGame, Game, IllegalMoveException, KaTrainSGF
 from katrain.core.lang import DEFAULT_LANGUAGE, i18n
 from katrain.core.remote_engine import make_engine
-from katrain.core.sgf_parser import Move, ParseError
 from katrain.gui.badukpan import AnalysisControls, BadukPanControls, BadukPanWidget  # noqa: F401
 from katrain.gui.controlspanel import ControlsPanel  # noqa: F401
-
-# used in kv
-# Star import kept deliberately: importing these classes registers them with Kivy's
-# Factory, which is how the .kv files resolve them by name.
-from katrain.gui.kivyutils import *  # noqa: F403
-from katrain.gui.kivyutils import PlayerSetupBlock
 from katrain.gui.popups import (
     ConfigAIPopup,
     ConfigPopup,
@@ -118,7 +114,7 @@ from katrain.gui.popups import (
 )
 from katrain.gui.sound import play_sound
 from katrain.gui.theme import Theme
-from katrain.gui.widgets import I18NFileBrowser, MoveTree, ScoreGraph, SelectionSlider  # noqa: F401
+from katrain.gui.widgets.panels import PlayerSetupBlock
 
 
 class KaTrainGui(Screen, KaTrainBase):
@@ -141,7 +137,7 @@ class KaTrainGui(Screen, KaTrainBase):
         self.contribute_popup = None
 
         self.pondering = False
-        self.show_move_num = False
+        self.show_move_num = self.config("trainer/show_move_numbers")
 
         self.animate_contributing = False
         self.message_queue = Queue()
@@ -218,7 +214,7 @@ class KaTrainGui(Screen, KaTrainBase):
         def set_focus_event(*args):
             self.last_focus_event = time.time()
 
-        MDApp.get_running_app().root_window.bind(focus=set_focus_event)
+        App.get_running_app().root_window.bind(focus=set_focus_event)
 
     def restart_engine(self):
         """Rebuild the analysis engine from current config and re-analyze.
@@ -714,7 +710,6 @@ class KaTrainGui(Screen, KaTrainBase):
                 (Theme.KEY_ANALYZE_EXTRA_SWEEP, ("analyze-extra", "sweep")),
                 (Theme.KEY_ANALYZE_EXTRA_ALTERNATIVE, ("analyze-extra", "alternative")),
                 (Theme.KEY_SELECT_BOX, ("select-box",)),
-                (Theme.KEY_RESET_ANALYSIS, ("reset-analysis",)),
                 (Theme.KEY_INSERT_MODE, ("insert-mode",)),
                 (Theme.KEY_PASS, ("play", None)),
                 (Theme.KEY_SELFPLAY_TO_END, ("selfplay-setup", "end", None)),
@@ -801,6 +796,9 @@ class KaTrainGui(Screen, KaTrainBase):
             self.controls.move_tree.delete_selected_node()
         elif keycode[1] == Theme.KEY_MOVE_TREE_TOGGLE_SELECTED_NODE_COLLAPSE and not ctrl_pressed:
             self.controls.move_tree.toggle_selected_node_collapse()
+        elif keycode[1] == Theme.KEY_RESET_ANALYSIS and "ctrl" in modifiers:
+            # Do not treat macOS Cmd-H as Ctrl-H.
+            self("reset-analysis")
         elif keycode[1] == Theme.KEY_NEW_GAME and ctrl_pressed:
             self("new-game-popup")
         elif keycode[1] == Theme.KEY_LOAD_GAME and ctrl_pressed:
@@ -863,7 +861,7 @@ class KaTrainGui(Screen, KaTrainBase):
             self.play_mode.switch_ui_mode()
 
 
-class KaTrainApp(MDApp):
+class KaTrainApp(App):
     gui = ObjectProperty(None)
     language = StringProperty(DEFAULT_LANGUAGE)
 
@@ -891,9 +889,6 @@ class KaTrainApp(MDApp):
         self.icon = ICON  # how you're supposed to set an icon
 
         self.title = f"KaTrain v{VERSION}"
-        self.theme_cls.theme_style = "Dark"
-        self.theme_cls.primary_palette = "Gray"
-        self.theme_cls.primary_hue = "200"
 
         kv_file = find_package_resource("katrain/gui.kv")
         popup_kv_file = find_package_resource("katrain/popups.kv")
@@ -1000,7 +995,7 @@ def run_app():
         def handle_exception(self, inst):
             ex_type, ex, tb = sys.exc_info()
             trace = "".join(traceback.format_tb(tb))
-            app = MDApp.get_running_app()
+            app = App.get_running_app()
 
             if app and app.gui:
                 app.gui.log(

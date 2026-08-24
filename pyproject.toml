@@ -1,13 +1,13 @@
 [project]
 name = "KaTrain"
-version = "1.19.0"
+version = "1.20.0"
 description = "Go/Baduk/Weiqi playing and teaching app with a variety of AIs"
 authors = [{ name = "Sander Land" }]
 # Cap tracks binary-wheel availability of kivy + ffpyplayer (no cp314 wheels yet).
 # Kivy 3.14 support is merged to master but unreleased (kivy/kivy#9225); ffpyplayer
 # 3.14 is still in progress (matham/ffpyplayer#185). Raise the cap once both ship
 # cp314 wheels. Note ffpyplayer is our direct dep (audio); kivy does not pull it.
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.11,<3.14"  # pysgf needs 3.11 (typing.Self)
 readme = "README.md"
 license = "MIT"
 classifiers = [
@@ -25,9 +25,9 @@ dependencies = [
     "ffpyplayer>=4.5.1",
     "urllib3>=2.2.2",
     "kivy>=2.3.1",
-    "kivymd==0.104.1",
     "websocket-client>=1.9.0",
     "certifi>=2026.2.25",
+    "pysgf>=1.0.0,<2",
 ]
 
 [project.urls]
@@ -52,8 +52,8 @@ default-groups = [
 
 [tool.ruff]
 line-length = 120
-# Pinned to the minimum supported version so the CI matrix (3.10/3.12/3.13) is consistent.
-target-version = "py310"
+# Pinned to the minimum supported version so the CI matrix (3.11/3.12/3.13) is consistent.
+target-version = "py311"
 
 [tool.ruff.lint]
 # Carries over the policy the (previously unenforced) .flake8 described: pyflakes plus

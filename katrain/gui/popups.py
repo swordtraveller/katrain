@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Tuple, Union
 from zipfile import ZipFile
 
 import urllib3
+from kivy.app import App
 from kivy.clock import Clock
 from kivy.metrics import dp
 from kivy.properties import BooleanProperty, ListProperty, NumericProperty, ObjectProperty, StringProperty
@@ -18,10 +19,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.utils import platform
-from kivymd.app import MDApp
-from kivymd.uix.boxlayout import MDBoxLayout
-from kivymd.uix.selectioncontrol import MDCheckbox
-from kivymd.uix.textfield import MDTextField
+from pysgf import Move
 
 from katrain.core.ai import ai_rank_estimation, game_report
 from katrain.core.constants import (
@@ -39,16 +37,12 @@ from katrain.core.constants import (
 )
 from katrain.core.engine import resolve_engine_backend
 from katrain.core.lang import i18n, rank_label
-from katrain.core.sgf_parser import Move
 from katrain.core.utils import PATHS, find_package_resource
-from katrain.gui.kivyutils import (
-    BackgroundMixin,
-    I18NSpinner,
-    TableCellLabel,
-    TableHeaderLabel,
-    TableStatLabel,
-)
 from katrain.gui.theme import Theme
+from katrain.gui.widgets.base import BackgroundMixin
+from katrain.gui.widgets.inputs import I18NSpinner
+from katrain.gui.widgets.labels import TableCellLabel, TableHeaderLabel, TableStatLabel
+from katrain.gui.widgets.material import MaterialCheckBox, MaterialTextField
 from katrain.gui.widgets.progress_loader import ProgressLoader
 
 
@@ -58,14 +52,14 @@ class I18NPopup(Popup):
 
     def __init__(self, size=None, **kwargs):
         if size:  # do not exceed window size
-            app = MDApp.get_running_app()
+            app = App.get_running_app()
             size[0] = min(app.gui.width, size[0])
             size[1] = min(app.gui.height, size[1])
         super().__init__(size=size, **kwargs)
-        self.bind(on_dismiss=Clock.schedule_once(lambda _dt: MDApp.get_running_app().gui.update_state(), 1))
+        self.bind(on_dismiss=Clock.schedule_once(lambda _dt: App.get_running_app().gui.update_state(), 1))
 
 
-class LabelledTextInput(MDTextField):
+class LabelledTextInput(MaterialTextField):
     input_property = StringProperty("")
     multiline = BooleanProperty(False)
 
@@ -98,7 +92,7 @@ class LabelledPathInput(LabelledTextInput):
         return self.text.strip().replace("\n", " ").replace("\r", " ")
 
 
-class LabelledCheckBox(MDCheckbox):
+class LabelledCheckBox(MaterialCheckBox):
     input_property = StringProperty("")
 
     def __init__(self, text=None, **kwargs):
@@ -165,7 +159,7 @@ class InputParseError(Exception):
     pass
 
 
-class QuickConfigGui(MDBoxLayout):
+class QuickConfigGui(BoxLayout):
     def __init__(self, katrain):
         super().__init__()
         self.katrain = katrain
@@ -227,7 +221,7 @@ class QuickConfigGui(MDBoxLayout):
                 selected = 0
                 try:
                     selected = widget.value_refs.index(value)
-                except:  # noqa: E722
+                except ValueError:
                     pass
                 widget.text = widget.values[selected]
             else:
@@ -342,7 +336,7 @@ def wrap_anchor(widget):
 class ConfigTeacherPopup(QuickConfigGui):
     def __init__(self, katrain):
         super().__init__(katrain)
-        MDApp.get_running_app().bind(language=self.build_and_set_properties)
+        App.get_running_app().bind(language=self.build_and_set_properties)
 
     def add_option_widgets(self, widgets):
         for widget in widgets:
@@ -377,6 +371,8 @@ class ConfigTeacherPopup(QuickConfigGui):
 
     def update_config(self, save_to_file=True, close_popup=True):
         super().update_config(save_to_file=save_to_file, close_popup=close_popup)
+        # The keyboard shortcut can change this without changing the config.
+        self.katrain.show_move_num = self.katrain.config("trainer/show_move_numbers")
         self.build_and_set_properties()
 
 
@@ -504,16 +500,16 @@ class BaseConfigPopup(QuickConfigGui):
 
     KATAGOS = {
         "win": {
-            "OpenCL v1.17.1": "https://github.com/lightvector/KataGo/releases/download/v1.17.1/katago-v1.17.1-opencl-windows-x64.zip",
-            "Eigen AVX2 (Modern CPUs) v1.17.1": "https://github.com/lightvector/KataGo/releases/download/v1.17.1/katago-v1.17.1-eigenavx2-windows-x64.zip",
-            "Eigen (CPU, Non-optimized) v1.17.1": "https://github.com/lightvector/KataGo/releases/download/v1.17.1/katago-v1.17.1-eigen-windows-x64.zip",
-            "OpenCL v1.17.1 (bigger boards)": "https://github.com/lightvector/KataGo/releases/download/v1.17.1/katago-v1.17.1-opencl-windows-x64+bs50.zip",
+            "OpenCL v1.18.1": "https://github.com/lightvector/KataGo/releases/download/v1.18.1/katago-v1.18.1-opencl-windows-x64.zip",
+            "Eigen AVX2 (Modern CPUs) v1.18.1": "https://github.com/lightvector/KataGo/releases/download/v1.18.1/katago-v1.18.1-eigenavx2-windows-x64.zip",
+            "Eigen (CPU, Non-optimized) v1.18.1": "https://github.com/lightvector/KataGo/releases/download/v1.18.1/katago-v1.18.1-eigen-windows-x64.zip",
+            "OpenCL v1.18.1 (bigger boards)": "https://github.com/lightvector/KataGo/releases/download/v1.18.1/katago-v1.18.1-opencl-windows-x64+bs50.zip",
         },
         "linux": {
-            "OpenCL v1.17.1": "https://github.com/lightvector/KataGo/releases/download/v1.17.1/katago-v1.17.1-opencl-linux-x64.zip",
-            "Eigen AVX2 (Modern CPUs) v1.17.1": "https://github.com/lightvector/KataGo/releases/download/v1.17.1/katago-v1.17.1-eigenavx2-linux-x64.zip",
-            "Eigen (CPU, Non-optimized) v1.17.1": "https://github.com/lightvector/KataGo/releases/download/v1.17.1/katago-v1.17.1-eigen-linux-x64.zip",
-            "OpenCL v1.17.1 (bigger boards)": "https://github.com/lightvector/KataGo/releases/download/v1.17.1/katago-v1.17.1-opencl-linux-x64+bs50.zip",
+            "OpenCL v1.18.1": "https://github.com/lightvector/KataGo/releases/download/v1.18.1/katago-v1.18.1-opencl-linux-x64.zip",
+            "Eigen AVX2 (Modern CPUs) v1.18.1": "https://github.com/lightvector/KataGo/releases/download/v1.18.1/katago-v1.18.1-eigenavx2-linux-x64.zip",
+            "Eigen (CPU, Non-optimized) v1.18.1": "https://github.com/lightvector/KataGo/releases/download/v1.18.1/katago-v1.18.1-eigen-linux-x64.zip",
+            "OpenCL v1.18.1 (bigger boards)": "https://github.com/lightvector/KataGo/releases/download/v1.18.1/katago-v1.18.1-opencl-linux-x64+bs50.zip",
         },
         "just-descriptions": {},
     }
@@ -657,8 +653,10 @@ class BaseConfigPopup(QuickConfigGui):
             self.check_models()
 
         for c in self.download_progress_box.children:
-            if isinstance(c, ProgressLoader) and c.request:
-                c.request.cancel()
+            if isinstance(c, ProgressLoader):
+                c.stop_spinner()  # the box is about to be cleared, and its animation would outlive it
+                if c.request:
+                    c.request.cancel()
         Clock.schedule_once(lambda _dt: self.download_progress_box.clear_widgets(), -1)  # main thread
         downloading = False
 
@@ -738,7 +736,7 @@ class BaseConfigPopup(QuickConfigGui):
                                 try:
                                     with open(os.path.join(os.path.split(path)[0], f), "wb") as fout:
                                         fout.write(zipObj.read(f))
-                                except:  # noqa: E722 -- already there? no problem
+                                except OSError:
                                     pass
                     os.remove(tmp_path)
                 else:
@@ -751,8 +749,10 @@ class BaseConfigPopup(QuickConfigGui):
             self.check_katas()
 
         for c in self.katago_download_progress_box.children:
-            if isinstance(c, ProgressLoader) and c.request:
-                c.request.cancel()
+            if isinstance(c, ProgressLoader):
+                c.stop_spinner()  # the box is about to be cleared, and its animation would outlive it
+                if c.request:
+                    c.request.cancel()
         self.katago_download_progress_box.clear_widgets()
         downloading = False
         for name, url in self.KATAGOS.get(platform, {}).items():
@@ -797,8 +797,8 @@ class ConfigPopup(BaseConfigPopup):
         super().__init__(katrain)
         Clock.schedule_once(self.check_katas)
         Clock.schedule_once(self.select_engine_tab)
-        MDApp.get_running_app().bind(language=self.check_models)
-        MDApp.get_running_app().bind(language=self.check_katas)
+        App.get_running_app().bind(language=self.check_models)
+        App.get_running_app().bind(language=self.check_katas)
 
     def select_engine_tab(self, *_args):
         # The active tab is authoritative for which engine is used; pick it based on the current config.
@@ -829,7 +829,7 @@ class ConfigPopup(BaseConfigPopup):
 class ContributePopup(BaseConfigPopup):
     def __init__(self, katrain):
         super().__init__(katrain)
-        MDApp.get_running_app().bind(language=self.check_katas)
+        App.get_running_app().bind(language=self.check_katas)
         Clock.schedule_once(self.check_katas)
 
     def start_contributing(self):
@@ -847,7 +847,7 @@ class ContributePopup(BaseConfigPopup):
 class LoadSGFPopup(BaseConfigPopup):
     def __init__(self, katrain):
         super().__init__(katrain)
-        app = MDApp.get_running_app()
+        app = App.get_running_app()
         self.filesel.favorites = [
             (os.path.abspath(app.gui.config("general/sgf_load")), "Last Load Dir"),
             (os.path.abspath(app.gui.config("general/sgf_save")), "Last Save Dir"),
@@ -863,12 +863,12 @@ class SaveSGFPopup(BoxLayout):
     def __init__(self, suggested_filename, **kwargs):
         super().__init__(**kwargs)
         self.suggested_filename = suggested_filename
-        app = MDApp.get_running_app()
+        app = App.get_running_app()
         self.filesel.favorites = [
             (os.path.abspath(app.gui.config("general/sgf_load")), "Last Load Dir"),
             (os.path.abspath(app.gui.config("general/sgf_save")), "Last Save Dir"),
         ]
-        save_path = os.path.expanduser(MDApp.get_running_app().gui.config("general/sgf_save") or ".")
+        save_path = os.path.expanduser(App.get_running_app().gui.config("general/sgf_save") or ".")
 
         def set_suggested(_widget, path):
             self.filesel.ids.file_text.text = os.path.join(path, self.suggested_filename)
