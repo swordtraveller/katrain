@@ -1187,3 +1187,112 @@
     BoxLayout:
         id: stats
         size_hint_y: 10
+
+
+<ConfigLLMPopup>:
+    config_select: config_select
+    config_name: config_name
+    base_url: base_url
+    api_key: api_key
+    model_name: model_name
+    test_status: test_status
+
+    BoxLayout:  # config dropdown + add/delete buttons
+        size_hint_y: None
+        height: dp(40)
+        spacing: CP_SMALL_SPACING
+        DescriptionLabel:
+            text: i18n._("llm:select config")
+            size_hint_x: 0.4
+            font_size: sp(Theme.DESC_FONT_SIZE)
+        AnchorLayout:
+            I18NSpinner:
+                id: config_select
+                size_hint: 0.9, 0.9
+        AutoSizedRoundedRectangleButton:
+            text: i18n._("llm:add")
+            size_hint: None, 0.8
+            height: dp(30)
+            on_press: root.add_config()
+        AutoSizedRoundedRectangleButton:
+            text: i18n._("llm:delete")
+            size_hint: None, 0.8
+            height: dp(30)
+            on_press: root.delete_config()
+
+    ConfigSectionGridLayout:  # editor fields
+        cols: 1
+        size_hint_y: None
+        height: self.minimum_height
+        spacing: dp(10)
+        padding: dp(10)
+        BoxLayout:
+            size_hint_y: None
+            height: dp(55)
+            DescriptionLabel:
+                text: i18n._("llm:config name")
+                size_hint_x: 0.4
+            LabelledTextInput:
+                id: config_name
+                write_tab: False
+                hint_text: i18n._("llm:config name")
+        BoxLayout:
+            size_hint_y: None
+            height: dp(55)
+            DescriptionLabel:
+                text: i18n._("llm:base url")
+                size_hint_x: 0.4
+            LabelledTextInput:
+                id: base_url
+                write_tab: False
+                hint_text: i18n._("llm:base url:hint")
+        BoxLayout:
+            size_hint_y: None
+            height: dp(55)
+            DescriptionLabel:
+                text: i18n._("llm:api key")
+                size_hint_x: 0.4
+            LabelledTextInput:
+                id: api_key
+                write_tab: False
+                password: True
+                hint_text: i18n._("llm:api key:hint")
+        BoxLayout:
+            size_hint_y: None
+            height: dp(55)
+            DescriptionLabel:
+                text: i18n._("llm:model name")
+                size_hint_x: 0.4
+            LabelledTextInput:
+                id: model_name
+                write_tab: False
+                hint_text: i18n._("llm:model name:hint")
+
+    SmallDescriptionLabel:  # note + test result line
+        text: i18n._("llm:apikey warning")
+        size_hint_y: None
+        height: dp(30)
+    DescriptionLabel:
+        id: test_status
+        text: ""
+        lang_change_tracking: i18n._('')  # for font: text is set from python, so hook it manually
+        size_hint_y: None
+        height: dp(30)
+
+    BoxLayout:  # bottom buttons
+        size_hint_y: None
+        height: dp(44)
+        spacing: CP_SMALL_SPACING
+        Widget:
+        AutoSizedRoundedRectangleButton:
+            text: i18n._("llm:test")
+            size_hint: None, 0.8
+            height: dp(32)
+            on_press: root.test_connection()
+        AutoSizedRoundedRectangleButton:
+            text: i18n._("update settings")
+            size_hint: None, 0.8
+            height: dp(32)
+            on_press: root.update_config(True)
+        Widget:
+

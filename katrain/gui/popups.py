@@ -37,6 +37,7 @@ from katrain.core.constants import (
 )
 from katrain.core.engine import resolve_engine_backend
 from katrain.core.lang import i18n, rank_label
+from katrain.core.llm import LLMConfig, load_llm_configs, test_llm_connection
 from katrain.core.utils import PATHS, find_package_resource
 from katrain.gui.theme import Theme
 from katrain.gui.widgets.base import BackgroundMixin
@@ -440,6 +441,132 @@ class ConfigAIPopup(QuickConfigGui):
         super().update_config(save_to_file=save_to_file, close_popup=close_popup)
         self.katrain.update_calculated_ranks()
         Clock.schedule_once(self.katrain.controls.update_players, 0)
+
+
+class ConfigLLMPopup(QuickConfigGui):
+    """Settings popup for OpenAI-compatible LLM providers.
+
+    Manages a list of named configs (name, base URL, API key, model) stored in
+    the ``llm`` section of the KaTrain config. The config picked in the dropdown
+    is the active one; the fields below edit it and "Save" persists the list.
+    """
+
+    KEYS = ("config_name", "base_url", "api_key", "model_name")
+
+    def __init__(self, katrain):
+        super().__init__(katrain)
+        katrain._config.setdefault("llm", {})  # user configs from before this feature lack the section
+        self._configs = load_llm_configs(katrain)
+        self._selected = self._clamp(self._active_index())
+        self.config_select.bind(text=self.on_select_config)
+        self._refresh_spinner()
+        self._load_editor()
+
+    # -- state helpers ------------------------------------------------------
+
+    def _active_index(self):
+        ix = self.katrain.config("llm/active_config", 0) or 0
+        return self._clamp(ix)
+
+    def _clamp(self, ix):
+        return max(0, min(ix, len(self._configs) - 1)) if self._configs else 0
+
+    def _persist(self, save=True):
+        self.katrain._config["llm"]["configs"] = [c.to_config() for c in self._configs]
+        self.katrain._config["llm"]["active_config"] = self._selected
+        if save:
+            self.katrain.save_config("llm")
+
+    def _refresh_spinner(self):
+        refs = [c.config_name or i18n._("llm:unnamed config").format(n=i + 1) for i, c in enumerate(self._configs)]
+        if refs:  # keep the current selection valid; an empty list clears the dropdown
+            self.config_select.value_refs = refs
+            self.config_select.select_key(refs[self._selected])
+        else:
+            self.config_select.selected_index = 0
+            self.config_select.values = []
+            self.config_select.text = ""
+            self.config_select.value_refs = []
+
+    def _load_editor(self):
+        """Fill the editor fields from the selected config."""
+        config = self._configs[self._selected] if self._configs else LLMConfig()
+        for key in self.KEYS:
+            getattr(self, key).text = getattr(config, key)
+
+    def _editor_config(self):
+        return LLMConfig(**{key: getattr(self, key).text for key in self.KEYS})
+
+    # -- dropdown and button handlers ---------------------------------------
+
+    def on_select_config(self, *_args):
+        """Dropdown selection: store any edits made to the previous config, then
+        make the picked config active and show it in the editor."""
+        if not self._configs:
+            return
+        ix = self._clamp(self.config_select.selected[0])
+        if ix == self._selected:
+            return
+        self._configs[self._selected] = self._editor_config()  # keep unsaved edits
+        self._selected = ix
+        self._persist()
+        self._refresh_spinner()
+        self._load_editor()
+
+    def save_active(self):
+        """Save the edited fields into the selected config and make it active."""
+        edited = self._editor_config()
+        if edited.empty():  # nothing entered yet: nothing to store
+            return
+        if not self._configs:  # first config ever: the save itself creates it
+            self._configs = [edited]
+            self._selected = 0
+        else:
+            self._configs[self._selected] = edited
+        self._persist()
+        self._refresh_spinner()
+
+    def add_config(self):
+        self._configs.append(LLMConfig())
+        self._selected = len(self._configs) - 1
+        self._persist()
+        self._refresh_spinner()
+        self._load_editor()
+
+    def delete_config(self):
+        if not self._configs:
+            return
+        del self._configs[self._selected]
+        self._selected = self._clamp(self._selected)
+        self._persist()
+        self._refresh_spinner()
+        self._load_editor()
+
+    def update_config(self, save_to_file=True, close_popup=True):
+        self.save_active()
+        return super().update_config(save_to_file=False, close_popup=close_popup)
+
+    # -- connection test ------------------------------------------------------
+
+    def test_connection(self):
+        self.test_status.text = i18n._("llm:testing")
+        self.test_status.color = Theme.TEXT_COLOR
+
+        def on_success(_reply):
+            Clock.schedule_once(self._test_done_ok, 0)
+
+        def on_failure(error):
+            Clock.schedule_once(lambda _dt: self._test_done_fail(error), 0)
+
+        test_llm_connection(self.katrain, self._editor_config(), on_success, on_failure)
+
+    def _test_done_ok(self, _dt=None):
+        self.test_status.text = i18n._("llm:test ok")
+        self.test_status.color = Theme.WINRATE_COLOR
+
+    def _test_done_fail(self, error):
+        self.test_status.text = i18n._("llm:test failed").format(error=error)
+        self.test_status.color = Theme.INPUT_ERROR_COLOR
 
 
 class EngineRecoveryPopup(QuickConfigGui):

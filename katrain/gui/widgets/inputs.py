@@ -64,6 +64,8 @@ class KeyValueSpinner(Spinner):
 
     def build_values(self, *_args):
         if self.value_refs and self.values:
+            if not 0 <= self.selected_index < len(self.values):  # e.g. list shrank
+                self.selected_index = 0
             self.text = self.values[self.selected_index]
             self.font_name = i18n.font_name
             self.update_dropdown_props()

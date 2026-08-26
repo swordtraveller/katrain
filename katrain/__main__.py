@@ -102,6 +102,7 @@ from katrain.gui.badukpan import AnalysisControls, BadukPanControls, BadukPanWid
 from katrain.gui.controlspanel import ControlsPanel  # noqa: F401
 from katrain.gui.popups import (
     ConfigAIPopup,
+    ConfigLLMPopup,
     ConfigPopup,
     ConfigTeacherPopup,
     ConfigTimerPopup,
@@ -135,6 +136,7 @@ class KaTrainGui(Screen, KaTrainBase):
         self.teacher_settings_popup = None
         self.timer_settings_popup = None
         self.contribute_popup = None
+        self.llm_settings_popup = None
 
         self.pondering = False
         self.show_move_num = self.config("trainer/show_move_numbers")
@@ -517,6 +519,15 @@ class KaTrainGui(Screen, KaTrainBase):
             self.config_popup.content.popup = self.config_popup
             self.config_popup.title += ": " + self.config_file
         self.config_popup.open()
+
+    def _do_llm_popup(self):
+        self.controls.timer.paused = True
+        if not self.llm_settings_popup:
+            self.llm_settings_popup = I18NPopup(
+                title_key="llm settings title", size=[dp(700), dp(680)], content=ConfigLLMPopup(self)
+            ).__self__
+            self.llm_settings_popup.content.popup = self.llm_settings_popup
+        self.llm_settings_popup.open()
 
     def _do_contribute_popup(self):
         if not self.contribute_popup:

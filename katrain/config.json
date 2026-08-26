@@ -24,6 +24,10 @@
         "savepath": "./dist_sgf/",
         "savesgf": false
     },
+    "llm": {
+        "active_config": 0,
+        "configs": []
+    },
     "general": {
         "sgf_load": "~/Downloads",
         "sgf_save": "./sgfout",

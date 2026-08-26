@@ -1156,3 +1156,57 @@ msgstr "Tahtada hamle numaralarını göster ('m' ile aç/kapat)"
 msgid "general:anim_pv_moves"
 msgstr ""
 "Bir varyant canlandırılırken gösterilecek hamle sayısı (0: canlandırma yok)"
+
+msgid "menu:llmsettings"
+msgstr "LLM Settings"
+
+msgid "llm settings title"
+msgstr "LLM Settings"
+
+msgid "llm:select config"
+msgstr "Configuration:"
+
+msgid "llm:unnamed config"
+msgstr "Config {n}"
+
+msgid "llm:add"
+msgstr "Add"
+
+msgid "llm:delete"
+msgstr "Delete"
+
+msgid "llm:config name"
+msgstr "Name"
+
+msgid "llm:base url"
+msgstr "Base URL"
+
+msgid "llm:base url:hint"
+msgstr "e.g. https://api.openai.com/v1"
+
+msgid "llm:api key"
+msgstr "API Key"
+
+msgid "llm:api key:hint"
+msgstr "leave empty for local services"
+
+msgid "llm:model name"
+msgstr "Model"
+
+msgid "llm:model name:hint"
+msgstr "e.g. gpt-4o-mini"
+
+msgid "llm:apikey warning"
+msgstr "(The API key is stored as plain text, do not re-use it anywhere)"
+
+msgid "llm:test"
+msgstr "Test Connection"
+
+msgid "llm:testing"
+msgstr "Testing connection..."
+
+msgid "llm:test ok"
+msgstr "Connection OK"
+
+msgid "llm:test failed"
+msgstr "Connection failed: {error}"

@@ -1060,3 +1060,57 @@ msgstr "在棋盤上顯示手數（按 'm' 鍵切換）"
 
 msgid "general:anim_pv_moves"
 msgstr "演示變化時顯示的手數（0 表示不演示）"
+
+msgid "menu:llmsettings"
+msgstr "大模型設定"
+
+msgid "llm settings title"
+msgstr "大模型設定"
+
+msgid "llm:select config"
+msgstr "設定："
+
+msgid "llm:unnamed config"
+msgstr "設定 {n}"
+
+msgid "llm:add"
+msgstr "新增"
+
+msgid "llm:delete"
+msgstr "刪除"
+
+msgid "llm:config name"
+msgstr "名稱"
+
+msgid "llm:base url"
+msgstr "服務位址"
+
+msgid "llm:base url:hint"
+msgstr "例如 https://api.openai.com/v1"
+
+msgid "llm:api key"
+msgstr "API 金鑰"
+
+msgid "llm:api key:hint"
+msgstr "本機服務可留空"
+
+msgid "llm:model name"
+msgstr "模型"
+
+msgid "llm:model name:hint"
+msgstr "例如 gpt-4o-mini"
+
+msgid "llm:apikey warning"
+msgstr "（API 金鑰以明文儲存，請勿在其他地方重複使用）"
+
+msgid "llm:test"
+msgstr "測試連線"
+
+msgid "llm:testing"
+msgstr "正在測試連線……"
+
+msgid "llm:test ok"
+msgstr "連線成功"
+
+msgid "llm:test failed"
+msgstr "連線失敗：{error}"
