@@ -1296,3 +1296,47 @@
             on_press: root.update_config(True)
         Widget:
 
+
+
+<LLMChatPopup>:
+    orientation: 'vertical'
+    spacing: CP_SPACING
+    padding: 4 * CP_PADDING, CP_PADDING, 4 * CP_PADDING, CP_PADDING
+    transcript: transcript
+    input: input
+    status: status
+
+    ScrollableLabel:
+        id: transcript
+        markup: True
+        size_hint: 1, 5
+
+    Label:
+        id: status
+        text: ""
+        lang_change_tracking: i18n._('')  # for font: text is set from python
+        color: Theme.INPUT_ERROR_COLOR
+        font_size: sp(Theme.DESC_FONT_SIZE * 0.8)
+        size_hint_y: None
+        height: self.texture_size[1] or dp(18)
+
+    BoxLayout:  # input row
+        size_hint_y: None
+        height: dp(44)
+        spacing: CP_SMALL_SPACING
+        LabelledTextInput:
+            id: input
+            write_tab: False
+            multiline: False
+            hint_text: i18n._("llm chat input hint")
+        AutoSizedRoundedRectangleButton:
+            text: i18n._("llm chat send")
+            size_hint: None, 0.8
+            height: dp(32)
+            on_press: root.send()
+        AutoSizedRoundedRectangleButton:
+            text: i18n._("llm chat clear")
+            size_hint: None, 0.8
+            height: dp(32)
+            on_press: root.clear()
+

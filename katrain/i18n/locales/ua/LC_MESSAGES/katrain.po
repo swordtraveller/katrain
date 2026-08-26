@@ -1196,3 +1196,36 @@ msgstr "Connection OK"
 
 msgid "llm:test failed"
 msgstr "Connection failed: {error}"
+
+msgid "llm chat title"
+msgstr "Chat with LLM"
+
+msgid "llm chat button"
+msgstr "LLM"
+
+msgid "llm chat input hint"
+msgstr "Type a message..."
+
+msgid "llm chat send"
+msgstr "Send"
+
+msgid "llm chat clear"
+msgstr "Clear"
+
+msgid "llm chat no config"
+msgstr "No LLM configured. Add one in LLM Settings (hamburger menu)."
+
+msgid "llm chat empty message"
+msgstr "Please type a message first."
+
+msgid "llm chat thinking"
+msgstr "Thinking..."
+
+msgid "llm chat error"
+msgstr "Error: {error}"
+
+msgid "llm chat you"
+msgstr "You"
+
+msgid "llm chat assistant"
+msgstr "Assistant"

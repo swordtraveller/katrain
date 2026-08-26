@@ -37,7 +37,7 @@ from katrain.core.constants import (
 )
 from katrain.core.engine import resolve_engine_backend
 from katrain.core.lang import i18n, rank_label
-from katrain.core.llm import LLMConfig, load_llm_configs, test_llm_connection
+from katrain.core.llm import LLMConfig, LLMError, active_llm_config, load_llm_configs, test_llm_connection
 from katrain.core.utils import PATHS, find_package_resource
 from katrain.gui.theme import Theme
 from katrain.gui.widgets.base import BackgroundMixin
@@ -1134,3 +1134,91 @@ class GameReportPopup(BoxLayout):
         # if not done analyzing, check again in 1s
         if not self.katrain.engine.is_idle():
             Clock.schedule_once(self._refresh, 1)
+
+
+class LLMChatPopup(BoxLayout):
+    """Continuous chat with the active LLM configuration.
+
+    Sends the full conversation history with each request, so the model keeps
+    context across turns. Responses arrive on a background thread and are
+    rendered via :meth:`_render`, scheduled back onto the Kivy thread.
+    """
+
+    MAX_HISTORY = 40  # messages kept in the request to bound token usage
+
+    def __init__(self, katrain):
+        super().__init__()
+        self.katrain = katrain
+        self.history = []  # [{"role": "user"/"assistant", "content": str}, ...]
+        self.busy = False
+        Clock.schedule_once(self._greet, 0)
+
+    def _greet(self, *_args):
+        if active_llm_config(self.katrain) is None:
+            self.transcript.text = i18n._("llm chat no config")
+
+    # -- rendering -----------------------------------------------------------
+
+    def _render(self):
+        lines = []
+        for msg in self.history:
+            who = i18n._("llm chat you") if msg["role"] == "user" else i18n._("llm chat assistant")
+            lines.append(f"[b]{who}[/b]\n{msg['content']}")
+        self.transcript.text = "\n\n".join(lines)
+        Clock.schedule_once(self._scroll_to_bottom, 0)
+
+    def _scroll_to_bottom(self, *_args):
+        self.transcript.scroll_y = 0  # ScrollView: 0 = bottom
+
+    # -- sending -------------------------------------------------------------
+
+    def send(self):
+        text = self.input.text.strip()
+        if self.busy:
+            return
+        if not text:
+            self.status.text = i18n._("llm chat empty message")
+            return
+        config = active_llm_config(self.katrain)
+        if config is None:
+            self.status.text = i18n._("llm chat no config")
+            return
+
+        self.input.text = ""
+        self.status.text = ""
+        self.history.append({"role": "user", "content": text})
+        self.history.append({"role": "assistant", "content": i18n._("llm chat thinking")})
+        self.busy = True
+        self._render()
+
+        def run():
+            try:
+                reply = config.client().chat(self.history[:-1][-self.MAX_HISTORY :])
+                Clock.schedule_once(lambda _dt: self._on_reply(reply), 0)
+            except LLMError as exc:
+                error = str(exc)  # bind now: `exc` is deleted when the except block ends
+                Clock.schedule_once(lambda _dt: self._on_error(error), 0)
+
+        threading.Thread(target=run, daemon=True).start()
+
+    def _on_reply(self, reply):
+        self.busy = False
+        self.history[-1] = {"role": "assistant", "content": reply}
+        self._render()
+
+    def _on_error(self, error):
+        self.busy = False
+        self.history.pop()  # drop the "Thinking..." placeholder
+        self.status.text = i18n._("llm chat error").format(error=error)
+        self._render()
+
+    # -- misc ----------------------------------------------------------------
+
+    def clear(self):
+        self.history = []
+        self.status.text = ""
+        self.busy = False
+        self._render()
+
+    def on_submit(self):  # Enter key inside a popup, per KaTrain's popup convention
+        self.send()

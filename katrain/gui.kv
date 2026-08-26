@@ -224,6 +224,12 @@
         size_hint: None, 0.5
         pos_hint: {'center_x': 0.15,'center_y':0.5}
         on_left_release: root.katrain("play",None)
+    AutoSizedRoundedRectangleButton:
+        id: llm_btn
+        text: i18n._('llm chat button')
+        size_hint: None, 0.5
+        pos_hint: {'center_x': 0.275,'center_y':0.5}
+        on_left_release: root.katrain("llm-chat-popup")
     BoxLayout:
         size_hint: None, 1
         width: 8 * self.height

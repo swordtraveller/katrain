@@ -1114,3 +1114,36 @@ msgstr "連線成功"
 
 msgid "llm:test failed"
 msgstr "連線失敗：{error}"
+
+msgid "llm chat title"
+msgstr "大模型聊天"
+
+msgid "llm chat button"
+msgstr "大模型"
+
+msgid "llm chat input hint"
+msgstr "輸入訊息…"
+
+msgid "llm chat send"
+msgstr "傳送"
+
+msgid "llm chat clear"
+msgstr "清空"
+
+msgid "llm chat no config"
+msgstr "未設定大模型，請先在側邊欄「大模型設定」中新增。"
+
+msgid "llm chat empty message"
+msgstr "請先輸入訊息。"
+
+msgid "llm chat thinking"
+msgstr "思考中…"
+
+msgid "llm chat error"
+msgstr "錯誤：{error}"
+
+msgid "llm chat you"
+msgstr "我"
+
+msgid "llm chat assistant"
+msgstr "助理"

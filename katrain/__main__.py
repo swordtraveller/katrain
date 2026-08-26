@@ -109,6 +109,7 @@ from katrain.gui.popups import (
     ContributePopup,
     EngineRecoveryPopup,
     I18NPopup,
+    LLMChatPopup,
     LoadSGFPopup,
     NewGamePopup,
     SaveSGFPopup,
@@ -137,6 +138,7 @@ class KaTrainGui(Screen, KaTrainBase):
         self.timer_settings_popup = None
         self.contribute_popup = None
         self.llm_settings_popup = None
+        self.llm_chat_popup = None
 
         self.pondering = False
         self.show_move_num = self.config("trainer/show_move_numbers")
@@ -528,6 +530,14 @@ class KaTrainGui(Screen, KaTrainBase):
             ).__self__
             self.llm_settings_popup.content.popup = self.llm_settings_popup
         self.llm_settings_popup.open()
+
+    def _do_llm_chat_popup(self):
+        if not self.llm_chat_popup:
+            self.llm_chat_popup = I18NPopup(
+                title_key="llm chat title", size=[dp(600), dp(700)], content=LLMChatPopup(self)
+            ).__self__
+            self.llm_chat_popup.content.popup = self.llm_chat_popup
+        self.llm_chat_popup.open()
 
     def _do_contribute_popup(self):
         if not self.contribute_popup:
