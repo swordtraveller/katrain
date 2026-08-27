@@ -47,7 +47,9 @@ class LLMClient:
     def chat(self, messages, temperature=None, max_tokens=None):
         """Send a chat request, return the assistant message text.
 
-        ``messages`` is the standard ``[{"role": ..., "content": ...}, ...]`` list.
+        ``messages`` is the standard ``[{"role": ..., "content": ...}, ...]`` list. A
+        message's ``content`` may be a plain string or the multimodal parts list
+        ``[{"type": "text"|"image_url", ...}, ...]`` used by vision-capable models.
         Raises :class:`LLMError` on connection or API errors.
         """
         body = {"model": self.model, "messages": messages}

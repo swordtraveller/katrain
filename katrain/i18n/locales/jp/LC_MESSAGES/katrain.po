@@ -1175,3 +1175,6 @@ msgstr "You"
 
 msgid "llm chat assistant"
 msgstr "Assistant"
+
+msgid "llm chat attach position"
+msgstr "Attach current position (SGF + board image)"

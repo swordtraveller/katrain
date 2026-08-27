@@ -1305,6 +1305,7 @@
     transcript: transcript
     input: input
     status: status
+    attach_position: attach_position
 
     ScrollableLabel:
         id: transcript
@@ -1339,4 +1340,17 @@
             size_hint: None, 0.8
             height: dp(32)
             on_press: root.clear()
+
+    BoxLayout:  # attach-position toggle row
+        size_hint_y: None
+        height: dp(28)
+        spacing: CP_SMALL_SPACING
+        LabelledCheckBox:
+            id: attach_position
+        DescriptionLabel:
+            text: i18n._("llm chat attach position")
+            font_size: sp(Theme.DESC_FONT_SIZE * 0.8)
+            size_hint_x: 1
+            halign: 'left'
+            valign: 'middle'
 

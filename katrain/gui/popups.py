@@ -38,6 +38,7 @@ from katrain.core.constants import (
 from katrain.core.engine import resolve_engine_backend
 from katrain.core.lang import i18n, rank_label
 from katrain.core.llm import LLMConfig, LLMError, active_llm_config, load_llm_configs, test_llm_connection
+from katrain.core.llm_context import position_context_parts
 from katrain.core.utils import PATHS, find_package_resource
 from katrain.gui.theme import Theme
 from katrain.gui.widgets.base import BackgroundMixin
@@ -1163,7 +1164,15 @@ class LLMChatPopup(BoxLayout):
         lines = []
         for msg in self.history:
             who = i18n._("llm chat you") if msg["role"] == "user" else i18n._("llm chat assistant")
-            lines.append(f"[b]{who}[/b]\n{msg['content']}")
+            content = msg["content"]
+            if isinstance(content, list):  # multimodal: show the text part, mark attachments
+                texts = [p["text"] for p in content if p.get("type") == "text"]
+                attach = len(content) - len(texts)
+                shown = "\n".join(texts) + (f" ({attach})" if attach else "")
+            else:
+                shown = content
+            # transcript markup is on: escape user/model text so e.g. [b] in a message cannot break it
+            lines.append(f"[b]{who}[/b]\n{shown.replace('[', '&bl;')}")
         self.transcript.text = "\n\n".join(lines)
         Clock.schedule_once(self._scroll_to_bottom, 0)
 
@@ -1186,7 +1195,14 @@ class LLMChatPopup(BoxLayout):
 
         self.input.text = ""
         self.status.text = ""
-        self.history.append({"role": "user", "content": text})
+
+        content = text
+        if self.attach_position.active:  # build the multimodal user message
+            parts = position_context_parts(self.katrain)
+            if parts:
+                content = [{"type": "text", "text": text}, *parts]
+
+        self.history.append({"role": "user", "content": content})
         self.history.append({"role": "assistant", "content": i18n._("llm chat thinking")})
         self.busy = True
         self._render()
