@@ -13,10 +13,16 @@ import tempfile
 from katrain.core.constants import OUTPUT_ERROR
 
 SGF_HEADER = "(;GM[1]FF[4]CA[UTF-8]SZ[{size}]"
+# X-prefixed properties are private extensions in SGF; XG carries the GTP coordinates
+# (e.g. ;B[dd]XG[D16]) so text models do not need the SGF y-flip convention.
 
 
 def current_position_sgf(katrain):
-    """SGF text of the game up to and including the current node."""
+    """SGF text of the game up to and including the current node.
+
+    Each move node carries an ``XG`` property with the move's GTP coordinates,
+    next to the standard SGF value.
+    """
     game = katrain.game
     path = []
     node = game.current_node
@@ -37,6 +43,8 @@ def current_position_sgf(katrain):
         move = n.move
         if move:
             parts.append(f";{n.player}[{move.sgf(board_size)}]")
+            if not move.is_pass:  # GTP coordinates of the played point, "pass" adds nothing
+                parts.append(f"XG[{move.gtp()}]")
     parts.append(")")
     return "".join(parts)
 

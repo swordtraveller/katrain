@@ -1124,4 +1124,4 @@ msgid "llm chat assistant"
 msgstr "助手"
 
 msgid "llm chat attach position"
-msgstr "附加当前局面信息（SGF + 棋盘截图）"
+msgstr "附加当前局面信息（SGF&GTP扩展+棋盘截图）"
