@@ -15,6 +15,21 @@ from katrain.core.constants import OUTPUT_ERROR
 SGF_HEADER = "(;GM[1]FF[4]CA[UTF-8]SZ[{size}]"
 # X-prefixed properties are private extensions in SGF; XG carries the GTP coordinates
 # (e.g. ;B[dd]XG[D16]) so text models do not need the SGF y-flip convention.
+STAR_POINTS_19 = (  # only valid on a 19x19 board; smaller boards have different star points
+    "corners: D4, Q4, D16, Q16; sides: K4, D10, Q10, K16; center (tengen): K10"
+)
+
+
+def sgf_prompt_text(sgf, board_size_x):
+    """SGF plus the notes a text model needs to read it: what XG means, and the star points."""
+    notes = [
+        "Current position SGF. Each move carries an XG property with its GTP coordinates "
+        "(e.g. ;B[dd]XG[D16] means Black played D16; GTP letters skip I):",
+        sgf,
+    ]
+    if board_size_x == 19:
+        notes.append(f"The nine star points in GTP coordinates: {STAR_POINTS_19}.")
+    return "\n".join(notes)
 
 
 def current_position_sgf(katrain):
@@ -71,13 +86,16 @@ def board_screenshot_data_uri(katrain):
 def position_context_parts(katrain):
     """Multimodal ``content`` parts describing the current position, or ``None``."""
     parts = []
+    board_size_x = 19
     try:
         sgf = current_position_sgf(katrain)
+        size = katrain.game.root.get_property("SZ", 19)
+        board_size_x = size if isinstance(size, int) else int(str(size).split(":")[0])
     except Exception as e:
         katrain.log(f"Building SGF context for LLM failed: {e}", OUTPUT_ERROR)
         sgf = None
     if sgf:
-        parts.append({"type": "text", "text": f"Current position SGF:\n{sgf}"})
+        parts.append({"type": "text", "text": sgf_prompt_text(sgf, board_size_x)})
     image = board_screenshot_data_uri(katrain)
     if image:
         parts.append({"type": "image_url", "image_url": {"url": image}})
