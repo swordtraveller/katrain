@@ -4,6 +4,9 @@ Builds the multimodal message parts used by vision-capable chat models: the
 game's SGF as a text part, and the board widget rendered to PNG and inlined as
 an ``image_url`` data URI. The SGF is built from the line of play leading to
 the current node only, so abandoned variations do not confuse the model.
+
+The notes explaining the SGF to the model are translated through ``i18n``, so
+they follow the app's UI language: a Chinese UI sends Chinese notes.
 """
 
 import base64
@@ -11,24 +14,37 @@ import os
 import tempfile
 
 from katrain.core.constants import OUTPUT_ERROR
+from katrain.core.lang import i18n
 
 SGF_HEADER = "(;GM[1]FF[4]CA[UTF-8]SZ[{size}]"
 # X-prefixed properties are private extensions in SGF; XG carries the GTP coordinates
 # (e.g. ;B[dd]XG[D16]) so text models do not need the SGF y-flip convention.
-STAR_POINTS_19 = (  # only valid on a 19x19 board; smaller boards have different star points
-    "corners: D4, Q4, D16, Q16; sides: K4, D10, Q10, K16; center (tengen): K10"
-)
+# Star points are only valid on a 19x19 board; smaller boards have different ones.
+STAR_POINTS_19_CORNERS = "D4, Q4, D16, Q16"
+STAR_POINTS_19_SIDES = "K4, D10, Q10, K16"
+STAR_POINTS_19_CENTER = "K10"  # tengen
+
+
+def star_points_19_text():
+    """The nine star points as one localized string; the GTP points themselves do not translate."""
+    return "; ".join(
+        [
+            i18n._("llm prompt star corners").format(points=STAR_POINTS_19_CORNERS),
+            i18n._("llm prompt star sides").format(points=STAR_POINTS_19_SIDES),
+            i18n._("llm prompt star center").format(point=STAR_POINTS_19_CENTER),
+        ]
+    )
 
 
 def sgf_prompt_text(sgf, board_size_x):
-    """SGF plus the notes a text model needs to read it: what XG means, and the star points."""
-    notes = [
-        "Current position SGF. Each move carries an XG property with its GTP coordinates "
-        "(e.g. ;B[dd]XG[D16] means Black played D16; GTP letters skip I):",
-        sgf,
-    ]
+    """SGF plus the notes a text model needs to read it: what XG means, and the star points.
+
+    Looked up at call time, so the notes follow the UI language also after a
+    language switch mid-session.
+    """
+    notes = [i18n._("llm prompt sgf intro"), sgf]
     if board_size_x == 19:
-        notes.append(f"The nine star points in GTP coordinates: {STAR_POINTS_19}.")
+        notes.append(i18n._("llm prompt star points").format(star_points=star_points_19_text()))
     return "\n".join(notes)
 
 

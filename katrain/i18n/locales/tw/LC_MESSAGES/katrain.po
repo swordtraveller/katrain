@@ -1150,3 +1150,19 @@ msgstr "助理"
 
 msgid "llm chat attach position"
 msgstr "附加目前局勢資訊（SGF&GTP擴展+棋盤截圖）"
+
+msgid "llm prompt sgf intro"
+msgstr ""
+"目前局勢 SGF。每手棋帶有 XG 屬性，即該手的 GTP 座標（例如 ;B[dd]XG[D16] 表示黑棋下在 D16；GTP 列字母跳過 I）："
+
+msgid "llm prompt star points"
+msgstr "九個星位的 GTP 座標：{star_points}。"
+
+msgid "llm prompt star corners"
+msgstr "角上四個：{points}"
+
+msgid "llm prompt star sides"
+msgstr "邊上四個：{points}"
+
+msgid "llm prompt star center"
+msgstr "中央（天元）：{point}"

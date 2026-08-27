@@ -1186,3 +1186,20 @@ msgstr "Assistant"
 
 msgid "llm chat attach position"
 msgstr "Attach current position (SGF&GTP + board screenshot)"
+
+msgid "llm prompt sgf intro"
+msgstr ""
+"Current position SGF. Each move carries an XG property with its GTP "
+"coordinates (e.g. ;B[dd]XG[D16] means Black played D16; GTP letters skip I):"
+
+msgid "llm prompt star points"
+msgstr "The nine star points in GTP coordinates: {star_points}."
+
+msgid "llm prompt star corners"
+msgstr "corners: {points}"
+
+msgid "llm prompt star sides"
+msgstr "sides: {points}"
+
+msgid "llm prompt star center"
+msgstr "center (tengen): {point}"
