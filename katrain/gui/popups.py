@@ -1,8 +1,10 @@
+import base64
 import glob
 import json
 import os
 import re
 import stat
+import tempfile
 import threading
 import time
 from typing import Any, Dict, List, Tuple, Union
@@ -11,11 +13,12 @@ from zipfile import ZipFile
 import urllib3
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.metrics import dp
+from kivy.metrics import dp, sp
 from kivy.properties import BooleanProperty, ListProperty, NumericProperty, ObjectProperty, StringProperty
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.utils import platform
@@ -1152,29 +1155,117 @@ class LLMChatPopup(BoxLayout):
         self.katrain = katrain
         self.history = []  # [{"role": "user"/"assistant", "content": str}, ...]
         self.busy = False
+        self._thumb_files = []  # temp files backing inline thumbnails
+        self.messages.bind(size=self._relayout)  # keep thumbnails within the message width
         Clock.schedule_once(self._greet, 0)
 
+    def cleanup(self, *_args):
+        """Delete the temp files behind the thumbnails; called when the popup closes."""
+        for path in self._thumb_files:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+        self._thumb_files = []
+
+    def on_reopen(self):
+        """Re-render after a close: the previous thumbnails' temp files are gone."""
+        self._render()
+        self._greet()
+
     def _greet(self, *_args):
-        if active_llm_config(self.katrain) is None:
-            self.transcript.text = i18n._("llm chat no config")
+        if active_llm_config(self.katrain) is None and not self.history:
+            label = Label(
+                text=i18n._("llm chat no config"),
+                font_size=sp(Theme.NOTES_FONT_SIZE),
+                color=Theme.TEXT_COLOR,
+                size_hint_y=None,
+            )
+            i18n.set_widget_font(label)
+            self.messages.add_widget(label)
+            self._relayout()
 
     # -- rendering -----------------------------------------------------------
 
+    THUMB_WIDTH_FRACTION = 0.8  # inline screenshots take 80% of the message width
+    THUMB_MAX_HEIGHT = 200  # dp; screenshots also stay under this height
+
     def _render(self):
-        lines = []
+        self.messages.clear_widgets()
         for msg in self.history:
             who = i18n._("llm chat you") if msg["role"] == "user" else i18n._("llm chat assistant")
             content = msg["content"]
-            if isinstance(content, list):  # multimodal: show the text part, mark attachments
+            images = []
+            if isinstance(content, list):  # multimodal: show texts, screenshots for image parts
                 texts = [p["text"] for p in content if p.get("type") == "text"]
-                attach = len(content) - len(texts)
-                shown = "\n".join(texts) + (f" ({attach})" if attach else "")
+                images = [p["image_url"]["url"] for p in content if p.get("type") == "image_url"]
+                shown = "\n".join(texts) + (f" ({len(images)})" if images else "")
             else:
                 shown = content
-            # transcript markup is on: escape user/model text so e.g. [b] in a message cannot break it
-            lines.append(f"[b]{who}[/b]\n{shown.replace('[', '&bl;')}")
-        self.transcript.text = "\n\n".join(lines)
+            # message markup is on: escape user/model text so e.g. [b] in it cannot break it
+            label = Label(
+                text=f"[b]{who}[/b]\n{shown.replace('[', '&bl;')}",
+                markup=True,
+                font_size=sp(Theme.NOTES_FONT_SIZE),
+                color=Theme.TEXT_COLOR,
+                size_hint_y=None,
+                halign="left",
+                valign="top",
+            )
+            i18n.set_widget_font(label)
+            self.messages.add_widget(label)
+            for url in images:
+                self.messages.add_widget(self._thumbnail(url))
+        self._relayout()
         Clock.schedule_once(self._scroll_to_bottom, 0)
+
+    def _relayout(self, *_args):
+        """Size message labels and screenshots to the current transcript width."""
+        width = self.messages.width
+        for child in self.messages.children[:]:
+            if isinstance(child, Label):
+                child.text_size = (width - dp(16), None)
+                child.height = max(child.texture_size[1], dp(18)) + dp(4)
+            elif isinstance(child, AnchorLayout):
+                for image in child.children:
+                    self._fit_thumbnail(image, width)
+
+    def _fit_thumbnail(self, image, width):
+        """Scale a screenshot to a fraction of the message width; no-op until its texture loads."""
+        iw, ih = image.texture_size
+        if not iw or not ih:  # texture still loading; _on_thumb_texture will call us back
+            return
+        max_w = max((width - dp(16)) * self.THUMB_WIDTH_FRACTION, dp(50))
+        max_h = dp(self.THUMB_MAX_HEIGHT)
+        scale = min(max_w / iw, max_h / ih, 1.0)
+        image.size = (iw * scale, ih * scale)
+
+    def _thumbnail(self, data_uri):
+        """Board screenshot as a centered image widget; sized to the message width in :meth:`_relayout`."""
+        image = Image(
+            source=self._cache_thumbnail(data_uri),
+            allow_stretch=True,
+            keep_ratio=True,
+            size_hint=(None, None),
+        )
+        image.bind(on_texture=self._on_thumb_texture)  # texture loads async: size once it does
+        # the grid left-aligns fixed-size children: anchor the image to center it in the row
+        anchor = AnchorLayout(size_hint_y=None)
+        image.bind(height=lambda _img, h: setattr(anchor, "height", h))  # row height follows the image
+        anchor.add_widget(image)
+        return anchor
+
+    def _on_thumb_texture(self, image, *_args):
+        self._fit_thumbnail(image, self.messages.width)
+
+    def _cache_thumbnail(self, data_uri, prefix="katrain-chat-thumb"):
+        """The data URI as a temp PNG Kivy's Image can load; cleared when the popup closes."""
+        header, b64 = data_uri.split(",", 1)
+        fd, path = tempfile.mkstemp(suffix=".png", prefix=prefix)
+        with os.fdopen(fd, "wb") as f:
+            f.write(base64.b64decode(b64))
+        self._thumb_files.append(path)
+        return path
 
     def _scroll_to_bottom(self, *_args):
         self.transcript.scroll_y = 0  # ScrollView: 0 = bottom

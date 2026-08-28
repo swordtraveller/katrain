@@ -1303,14 +1303,31 @@
     spacing: CP_SPACING
     padding: 4 * CP_PADDING, CP_PADDING, 4 * CP_PADDING, CP_PADDING
     transcript: transcript
+    messages: messages
     input: input
     status: status
     attach_position: attach_position
 
-    ScrollableLabel:
+    ScrollView:  # chat log: one label per message, inline thumbnails for attached screenshots
         id: transcript
-        markup: True
         size_hint: 1, 5
+        do_scroll_x: False
+        scroll_type: ['bars']
+        bar_width: 5
+        bar_color: Theme.SCROLLBAR_COLOR
+        canvas.before:
+            Color:
+                rgba: Theme.BOX_BACKGROUND_COLOR
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        GridLayout:
+            id: messages
+            cols: 1
+            padding: dp(8), dp(8)
+            spacing: dp(10)
+            size_hint_y: None
+            height: self.minimum_height
 
     Label:
         id: status

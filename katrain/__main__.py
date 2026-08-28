@@ -537,6 +537,8 @@ class KaTrainGui(Screen, KaTrainBase):
                 title_key="llm chat title", size=[dp(600), dp(700)], content=LLMChatPopup(self)
             ).__self__
             self.llm_chat_popup.content.popup = self.llm_chat_popup
+            self.llm_chat_popup.bind(on_dismiss=self.llm_chat_popup.content.cleanup)
+        self.llm_chat_popup.content.on_reopen()
         self.llm_chat_popup.open()
 
     def _do_contribute_popup(self):
